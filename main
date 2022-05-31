@@ -1,0 +1,146 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <malloc.h>
+#include <string.h>
+#include <ctype.h>
+#define MAX 100
+#define MAX_CAMPO_OCCUPAZIONE 20
+
+typedef struct utente {
+	int userid;
+	int eta;
+	char genere;
+	int num_film;
+	char occupazione[MAX_CAMPO_OCCUPAZIONE];
+} utente;
+
+struct utente* array_struttura_utente;    //array di strutture utenti dinamico 
+
+//prototipi funzione 
+void ordina_utenti(utente*, const int totale_utenti);
+void scrivi_studenti(utente*, const int totale_utenti);
+
+//extra 
+void stampa(utente*, const int totale_utenti);
+int main() {
+
+	FILE* letturaPTR;
+	array_struttura_utente = (utente*)calloc(MAX, sizeof(utente));   //genera array di strutture 
+	unsigned int n_utenti = 0;
+	char line[MAX];   //copio la stringa
+	char* token[5];
+	char* next_token = NULL;
+	int i;
+	int res;
+
+	res = fopen_s(&letturaPTR, "users.csv", "r");
+
+	if (letturaPTR == NULL) {   //apre file per la lettura 
+		puts("IMPOSSIBILE APRIRE IL FILE");
+		return -1;
+	}
+	else { 
+		puts("lettura da File ORIGINALE");
+		while (!feof(letturaPTR) && n_utenti < MAX) {
+			fscanf_s(letturaPTR, "%s", line, _countof(line));
+			
+			printf("line : %s\n", line);
+			token[0] = strtok_s(line, ",", &next_token);
+			//	printf("token [0] : %s\n", token[0]);
+			for (i = 1; i <= 4; ++i) {
+				token[i] = strtok_s(NULL, ",", &next_token);
+				//printf("token [%d] -> %s  ", i, token[i]);
+			}
+			
+			//applico un filtro per copiare nell'array solo gli utenti [ STUDENTI ]
+			if (!strcmp( token[4], "student")) {
+				array_struttura_utente[n_utenti].userid = atoi(token[0]);
+				array_struttura_utente[n_utenti].eta = atoi(token[1]);
+				array_struttura_utente[n_utenti].genere = token[2][0];
+				array_struttura_utente[n_utenti].num_film = atoi(token[3]);
+				strcpy_s(array_struttura_utente[n_utenti].occupazione, MAX_CAMPO_OCCUPAZIONE, token[4]);
+				++n_utenti;
+			}//fine if
+		}
+		fclose(letturaPTR);
+	}//fine else 
+	
+	
+	ordina_utenti(array_struttura_utente, n_utenti);
+	printf("\n\n\n");
+	puts("Filtro Studenti + ordine per ETA' crescente");
+	stampa(array_struttura_utente, n_utenti);
+	puts("creazione nuovo FILE in corso");
+	scrivi_studenti(array_struttura_utente, n_utenti);
+	puts("creazione nuovo file avvenuta con SUCCESSO");
+	printf(" \n\n\n");
+	puts("GRAZIE E ARRIVEDERCI");
+}// fine main
+
+/*ordinamento tramite INSERZIONE ( PG. 594 DEITEL )  efficienza O(n^2)
+//stiamo trattando un file contente pochi dati ( MAX 100 ) 
+*/
+void ordina_utenti(utente*, const int totale_utenti)
+{
+	struct utente array_temp [1];    //array di appoggio per l'ordinamento
+
+	for (unsigned int i = 0; i < totale_utenti; i++)
+	{
+		size_t moveItem = i;  //seleziona indice in cui inserire l'elemento
+		array_temp[0] = array_struttura_utente[i]; //copia l'elemento da capiare
+
+		//while cerca posizione mantenendo ordinamento in base all'eta'
+		while (moveItem > 0 && array_struttura_utente[moveItem - 1].eta > array_temp[0].eta) {
+			//sposta a dx di un elemento 
+			array_struttura_utente[moveItem] = array_struttura_utente[moveItem - 1];
+			--moveItem;
+		}
+		array_struttura_utente[moveItem] = array_temp[0]; //inserisce la struttura nel suo ordine 
+	}//fine for 
+
+}//fine funzione ordina utenti 
+void scrivi_studenti(utente*, const int totale_utenti)
+{
+
+	FILE* nuovoFile;
+	int res;
+	res = fopen_s(&nuovoFile, "NEWfILE.csv", "w");
+	if (nuovoFile == NULL) {
+		puts("IMPOSSIBILE CREARE FILE");
+	}
+	else {
+		puts("creazione nuovo FILE");
+		
+	
+			for (unsigned int k = 0; k < totale_utenti; ++k)
+			{
+				//printf("cicli : %d", k);
+				//salva nel nuovo file 
+				fprintf(nuovoFile, "%d,%d,%c,%d,%s\n",
+					array_struttura_utente[k].userid,
+					array_struttura_utente[k].eta,
+					array_struttura_utente[k].genere,
+					array_struttura_utente[k].num_film,
+					array_struttura_utente[k].occupazione);
+			}
+		fclose(nuovoFile);
+	}
+
+}//fine funzione nuovo FILE 
+
+void stampa(utente*, const int totale_utenti)
+{
+	puts("STAMPA ARRAY STRUTTURA  : ");
+	for (unsigned int j = 0; j < totale_utenti; ++j)
+	{
+		printf("utente N : %d\n", j);
+		printf("%d\t", array_struttura_utente[j].userid);
+		printf("%d\t", array_struttura_utente[j].eta);
+		printf("%c\t", array_struttura_utente[j].genere);
+		printf("%d\t", array_struttura_utente[j].num_film);
+		printf("%s\t", array_struttura_utente[j].occupazione);
+		puts("\tprossimo utente");
+		puts("");
+	} // fine inserimento da file in struttura
+}
+
